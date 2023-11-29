@@ -25,3 +25,4 @@ yarn-error.log*
 
 #electron-forge make output
 /out
+.eslintcache
