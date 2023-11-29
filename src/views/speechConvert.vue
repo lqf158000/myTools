@@ -2,22 +2,21 @@
 <template>
   <div>
     <span style="display: block;">
-      支持热键：按{{hotkeyForm.startHotKey}}开始录制，{{hotkeyForm.stopHotKey}}停止录制获取结果并复制
+      支持热键：按F7开始录制，F8停止录制获取结果并复制
     </span>
-    <el-button @click="showHotkeySetting= true">自定义快捷键</el-button>
     <el-row style="margin-top:30px;margin-bottom: 30px;">
       <el-button
         type="primary"
         @click="startRecognition"
         :disabled="isRecording"
       >
-        开始录制({{hotkeyForm.startHotKey}})
+        开始录制(F7)
       </el-button>
       <el-button
         @click="stopRecognition"
         :disabled="!isRecording"
       >
-        结束录制并复制({{hotkeyForm.stopHotKey}})
+        结束录制并复制(F8)
       </el-button>
       <i v-show="showIcon" class="el-icon-headset" style="margin-left:20px">录音中...</i>
     </el-row>
@@ -38,65 +37,33 @@
         复制
       </el-button>
     </el-row>
-    <el-dialog
-      title="自定义快捷键"
-      :visible.sync="showHotkeySetting"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-      :show-close="false"
-    >
-    <el-form ref="hotkeyForm" :model="hotkeyForm">
-      <el-form-item label="开始录制">
-        <el-input
-          v-model="hotkeyForm.startHotKey"
-          @focus="showSetKey('startHotKey')"
-          placeholder="请按一个键以设置快捷键"
-          readonly
-        ></el-input>
-      </el-form-item>
-      <el-form-item label="停止录制">
-        <el-input
-          v-model="hotkeyForm.stopHotKey"
-          @focus="showSetKey('stopHotKey')"
-          placeholder="请按一个键以设置快捷键"
-          readonly
-        ></el-input>
-      </el-form-item>
-    </el-form>
-      <span slot="footer">
-        <el-button @click="setDefaultHotkey">恢复默认</el-button>
-        <el-button type="primary" @click="validateKey">确 定</el-button>
-      </span>
-    </el-dialog>
   </div>
 </template>
 
 <script>
 import { copyToClipboard } from '../common/copyText';
+import { ipcRenderer } from 'electron';
 
 export default {
   data() {
     return {
       recognition: null,
       transcript: '',
-      showHotkeySetting: false,
-      hotkeyForm: {
-        startHotKey: 'F11',
-        stopHotKey: 'F12',
-      },
-      formKey: '',
       showIcon: false,
       isRecording: false,
+      audioContext: new (window.AudioContext || window.webkitAudioContext)(),
+      oscillator: null,
+      gainNode: null,
     };
   },
 
   mounted() {
+    // 初始化语音识别
     this.initWebkitSpeechRec();
-    window.addEventListener('keydown', this.keydownHandler);
-  },
-
-  beforeDestroy() {
-    window.removeEventListener('keydown', this.keydownHandler);
+    // 初始化音频播放
+    this.initAudioComponents();
+    // 初始化热键监听
+    this.initHotKeyListenr();
   },
 
   methods: {
@@ -104,54 +71,16 @@ export default {
       copyToClipboard(this.transcript);
     },
 
-    keydownHandler(e) {
-      debugger;
-      console.log(e);
-      console.log(this.hotkeyForm.startHotKey);
-      if (e.key === this.hotkeyForm.startHotKey) {
-        this.isRecording = true;
-        this.startRecognition();
-        e.preventDefault();
-      } else if (e.key === this.hotkeyForm.stopHotKey) {
-        this.isRecording = false;
-        this.stopRecognition();
-        e.preventDefault();
-      }
-      this.$forceUpdate();
-    },
-
-    showSetKey(formKey) {
-      window.removeEventListener('keydown', this.keydownHandler);
-      window.addEventListener('keydown', this.setKey);
-      this.formKey = formKey;
-      this.hotkeyForm[formKey] = '';
-    },
-
-    setKey(event) {
-      let { key } = event;
-      if (event.ctrlKey) key = `Ctrl+${key}`;
-      if (event.shiftKey) key = `Shift+${key}`;
-      if (event.altKey) key = `Alt+${key}`;
-      if (event.metaKey) key = `Command+${key}`;
-      this.hotkeyForm[this.formKey] = event.key;
-      window.removeEventListener('keydown', this.setKey);
-      window.addEventListener('keydown', this.keydownHandler);
-    },
-
-    setDefaultHotkey() {
-      this.hotkeyForm.startHotKey = 'F11';
-      this.hotkeyForm.stopHotKey = 'F12';
-    },
-
-    validateKey() {
-      if (this.hotkeyForm.startHotKey === this.hotkeyForm.stopHotKey) {
-        this.$message({
-          type: 'error',
-          message: '开始和结束录制的快捷键不能相同',
-        });
-      } else {
-        this.showHotkeySetting = false;
-      }
+    initHotKeyListenr() {
+      // 监听 'global-shortcut' 消息
+      ipcRenderer.on('global-shortcut', (event, arg) => {
+        // 当收到消息时，执行相应的操作
+        if (arg === 'F7') {
+          this.startRecognition();
+        } else if (arg === 'F8') {
+          this.stopRecognition();
+        }
+      });
     },
 
     initWebkitSpeechRec() {
@@ -183,23 +112,79 @@ export default {
       };
 
       this.recognition.onerror = (event) => {
-        alert(`语音识别错误: ${event.error}`);
+        alert(`语音识别发生错误，原因：${event.error}`);
       };
     },
 
     startRecognition() {
-      console.log('sta');
-      this.recognition.start();
-      this.showIcon = true;
+      if (!this.isRecording) {
+        this.transcript = '';
+        this.showIcon = true;
+        this.isRecording = true;
+        this.recognition.start();
+        this.playRisingTone();
+      }
     },
 
     stopRecognition() {
-      console.log('stp');
-      this.showIcon = false;
-      this.recognition.stop();
-      this.copy();
+      if (this.isRecording) {
+        this.showIcon = false;
+        this.isRecording = false;
+        this.recognition.stop();
+        this.copy();
+        this.playFallingTone();
+      }
     },
 
+    initAudioComponents() {
+      // 创建一个新的振荡器
+      this.oscillator = this.audioContext.createOscillator();
+      // 创建一个新的增益节点
+      this.gainNode = this.audioContext.createGain();
+
+      // 设置振荡器的类型为正弦波
+      this.oscillator.type = 'sine';
+      // 将振荡器连接到增益节点
+      this.oscillator.connect(this.gainNode);
+      // 将增益节点连接到音频上下文的输出
+      this.gainNode.connect(this.audioContext.destination);
+    },
+
+    playRisingTone() {
+      // 初始化音频组件
+      this.initAudioComponents();
+      // 设置振荡器的频率为300Hz
+      this.oscillator.frequency.value = 300;
+
+      // 在当前时间开始播放
+      this.oscillator.start(this.audioContext.currentTime);
+      // 在0.6秒内将频率平滑地提高到600Hz
+      setTimeout(() => {
+        this.oscillator.frequency.exponentialRampToValueAtTime(600, this.audioContext.currentTime + 0.6);
+      }, 0);
+      // 在1秒后停止播放
+      setTimeout(() => {
+        this.oscillator.stop(this.audioContext.currentTime);
+      }, 1000);
+    },
+
+    playFallingTone() {
+      // 初始化音频组件
+      this.initAudioComponents();
+      // 设置振荡器的频率为600Hz
+      this.oscillator.frequency.value = 600;
+
+      // 在当前时间开始播放
+      this.oscillator.start(this.audioContext.currentTime);
+      // 立即开始，在0.6秒内将频率平滑地降低到300Hz
+      setTimeout(() => {
+        this.oscillator.frequency.exponentialRampToValueAtTime(300, this.audioContext.currentTime + 0.6);
+      }, 0);
+      // 在1秒后停止播放
+      setTimeout(() => {
+        this.oscillator.stop(this.audioContext.currentTime);
+      }, 1000);
+    }
   },
 };
 </script>

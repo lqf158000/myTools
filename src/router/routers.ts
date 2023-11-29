@@ -1,16 +1,10 @@
 import About from '@/views/About.vue';
-import Home from '@/views/Home.vue';
 import SpeechConvert from '@/views/speechConvert.vue';
 
 export default [
   {
-    path: '/home',
-    name: 'Home',
-    component: Home,
-    meta: {
-      title: '主页',
-      isMenu: true,
-    },
+    path: '/',
+    redirect: '/about',
   },
   {
     path: '/about',

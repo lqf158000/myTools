@@ -10,7 +10,7 @@
         v-for="page in routePages"
       >
         <el-menu-item
-          v-if="page.meta.isMenu"
+          v-if="page.meta && page.meta.isMenu"
           :key="page.name"
           :index="page.path"
         >
