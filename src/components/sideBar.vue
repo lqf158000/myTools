@@ -5,10 +5,9 @@
       background-color="#545c64"
       text-color="#fff"
       router
-      active-text-color="#ffd04b">
-      <template
-        v-for="page in routePages"
-      >
+      active-text-color="#ffd04b"
+    >
+      <template v-for="page in routePages">
         <el-menu-item
           v-if="page.meta && page.meta.isMenu"
           :key="page.name"
@@ -22,7 +21,7 @@
 </template>
 
 <script>
-import routePages from '../router/routers';
+import routePages from "../router/routers.ts";
 
 export default {
   data() {
@@ -30,8 +29,7 @@ export default {
       routePages,
     };
   },
-  methods: {
-  },
+  methods: {},
 };
 </script>
 
