@@ -16,34 +16,36 @@
     "predeploy": "npm run build",
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "makex32": "npx electron-packager . --platform=win32 --arch=x64 --overwrite --prune"
   },
   "main": "src/background.ts",
   "dependencies": {
-    "@typescript-eslint/parser": "^6.13.1",
     "core-js": "^2.6.5",
-    "electron": "^27.1.2",
-    "electron-devtools-installer": "^3.1.0",
-    "electron-squirrel-startup": "^1.0.0",
     "element-ui": "^2.15.14",
     "vue": "^2.6.10",
     "vue-class-component": "^7.0.2",
     "vue-cli-plugin-electron-builder": "^2.1.1",
     "vue-property-decorator": "^8.1.0",
     "vue-router": "^3.0.3",
-    "vuex": "^3.0.1"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.23.3",
-    "@babel/plugin-syntax-import-meta": "^7.10.4",
-    "@babel/preset-env": "^7.23.3",
+    "vuex": "^3.0.1",
+    "electron-packager": "^17.1.2",
+    "electron": "^27.1.2",
+    "electron-devtools-installer": "^3.1.0",
+    "electron-squirrel-startup": "^1.0.0",
     "@electron-forge/cli": "^7.1.0",
     "@electron-forge/maker-deb": "^7.1.0",
     "@electron-forge/maker-rpm": "^7.1.0",
     "@electron-forge/maker-squirrel": "^7.1.0",
     "@electron-forge/maker-zip": "^7.1.0",
     "@electron-forge/plugin-auto-unpack-natives": "^7.1.0",
-    "@types/electron-devtools-installer": "^2.2.0",
+    "@types/electron-devtools-installer": "^2.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.3",
+    "@typescript-eslint/parser": "^6.13.1",
+    "@babel/plugin-syntax-import-meta": "^7.10.4",
+    "@babel/preset-env": "^7.23.3",
     "@vue/cli-plugin-babel": "^3.12.0",
     "@vue/cli-plugin-eslint": "^5.0.8",
     "@vue/cli-plugin-typescript": "^3.12.0",
@@ -65,5 +67,10 @@
     "vue-template-compiler": "^2.6.10"
   },
   "homepage": "https://lqf158000.github.io/myTools/",
-  "license": "MIT"
+  "license": "MIT",
+  "electronPackagerConfig": {
+    "platform": "win32",
+    "arch": "x64",
+    "icon": ""
+  }
 }
